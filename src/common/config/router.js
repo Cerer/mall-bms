@@ -6,76 +6,83 @@
  */
 
 //路由配置
-let routes = [
-    {
-        path: '/',
-        name: 'layout',
-        redirect: { //重定向
-            name: 'index'
-        },
-        component: 'layout',
-        children: [
-            {
-                path: '/index',
-                name: 'index',
-                component: 'index/index',
-            },
-            {
-                path: '/shop/goods/list',
-                name: 'list',
-                component: 'shop/goods/list',
-            }
-        ]
-    },
-    {
-        path: '/login',
-        name: 'login',
-        component: 'login/index'
-    },
-    {
-        path: '*',
-        redirect: { //重定向
-            name: 'index'
-        },
-    }
+let routes = [{
+		path: '/',
+		name: 'layout',
+		redirect: { //重定向
+			name: 'index'
+		},
+		component: 'layout',
+		children: [{
+				meta: {
+					title: '后台首页'
+				},
+				component: 'index/index',
+			},
+			{
+				meta: {
+					title: '商品列表'
+				},
+				component: 'shop/goods/list',
+			}
+		]
+	},
+	{
+		meta: {
+			title: '登录页'
+		},
+		component: 'login/index'
+	},
+	{
+		path: '*',
+		redirect: { //重定向
+			name: 'index'
+		},
+	}
 ]
 
 // 获取路由信息方法component
-let getRoutes = function () {
-    // 自动生成路由
-    createRoute(routes);
-    return routes;
+let getRoutes = function() {
+	// 自动生成路由
+	createRoute(routes);
+	return routes;
 }
 
 //自动生成路由
 function createRoute(arr) {
-    for (let i = 0; i < arr.length; i++) {
-        if (!arr[i].component) return; //没有设置路由直接返回
-        // 去除index
-        let val = getValue(arr[i].component);
+	for (let i = 0; i < arr.length; i++) {
+		if (!arr[i].component) return; //没有设置路由直接返回
+		// 去除index
+		let val = getValue(arr[i].component);
 
-        // 自动生成component
-        let componentFun = import(`../../views/${arr[i].component}.vue`);
-        arr[i].component = () => componentFun; //拼接路由信息
-        if (arr[i].children && arr[i].children.length > 0) { //有子路由继续循环
-            createRoute(arr[i].children)
-        }
-    }
+		//生成name
+		arr[i].name = arr[i].name || val.replace(/\//g, '_');
+
+		//生成path
+		arr[i].path = arr[i].path || `/${val}`;
+
+		// 自动生成component
+		let componentFun = import(`../../views/${arr[i].component}.vue`);
+		arr[i].component = () => componentFun; //拼接路由信息
+		if (arr[i].children && arr[i].children.length > 0) { //有子路由继续循环
+			createRoute(arr[i].children)
+		}
+	}
 }
 
 //结尾是index的去除index
 function getValue(str) {
-    //获取最后一个/的索引
-    let index = str.lastIndexOF('/');
+	//获取最后一个/的索引
+	let index = str.lastIndexOf('/');
 
-    //获取最后一个/后面的值
-    let val = str.substring(index + 1, str.length);
+	//获取最后一个/后面的值
+	let val = str.substring(index + 1, str.length);
 
-    // 判断是不是index结尾
-    if (val === 'index') {
-        return str.substring(index, -1);
-    }
-    return str;
+	// 判断是不是index结尾
+	if (val === 'index') {
+		return str.substring(index, -1);
+	}
+	return str;
 }
 
 export default getRoutes();
