@@ -13,7 +13,8 @@ export default {
 					},
 					{
 						icon: 'el-icon-picture',
-						name: '相册管理'
+						name: '相册管理',
+						pathname: 'image'
 					},
 					{
 						icon: 'el-icon-s-order',
