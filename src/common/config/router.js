@@ -30,6 +30,12 @@ let routes = [{
 					title: '商品列表'
 				},
 				component: 'shop/goods/list',
+			},
+			{
+				meta: {
+					title: '创建商品'
+				},
+				component: 'shop/goods/create',
 			}
 		]
 	},
