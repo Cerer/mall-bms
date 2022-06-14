@@ -1,4 +1,4 @@
-<!-- 创建商品--商品属性--多规格--规格卡片 -->
+<!-- 创建商品--商品规格--多规格--添加规格 -->
 <template>
 	<div>
 		<div class="card mb-3" style="line-height: 1.2;">
@@ -43,12 +43,13 @@
 				<!-- 规格属性列表 -->
 				<div class="d-flex align-items-center flex-wrap">
 					<sku-card-children
-						v-for="(item2, index2) in item.list"
+						v-for="(item2, index2) in list"
 						:key="index2"
 						:type="item.type"
 						:item="item2"
 						:cardIndex="index"
 						:listIndex="index2"
+						v-dragging="{ item: item2, list: list, group: `skuItem${index}` }"
 					></sku-card-children>
 				</div>
 
@@ -76,7 +77,9 @@ export default {
 	},
 
 	data() {
-		return {};
+		return {
+			list: this.item.list
+		};
 	},
 
 	computed: {
@@ -85,8 +88,25 @@ export default {
 		}
 	},
 
+	mounted() {
+		// 监听拖拽过程
+		// this.$dragging.$on('dragged', ({value}) => {
+		// 	console.log(value);
+		// });
+
+		// 监听拖拽结束
+		this.$dragging.$on('dragend', e => {
+			if (e.group === 'skuItem' + this.index) {
+				this.sortSkuValue({
+					index: this.index,
+					list: this.list
+				});
+			}
+		});
+	},
+
 	methods: {
-		...mapMutations(['delSkuCard', 'vModelSkuCard', 'sortSkuCard', 'addSkuValue']),
+		...mapMutations(['delSkuCard', 'vModelSkuCard', 'sortSkuCard', 'addSkuValue', 'sortSkuValue']),
 
 		// 修改卡片
 		vModel(key, value, index) {

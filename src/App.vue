@@ -1,11 +1,41 @@
 <template>
-	<div id="app"><router-view></router-view></div>
+	<div id="app">
+		<router-view></router-view>
+
+		<!-- 选择相册弹框 -->
+		<image-dialog ref="imageDialog" :max="maxChooseImage"></image-dialog>
+	</div>
 </template>
 
 <script>
+import imageDialog from '@/components/image/image-dialog.vue';
 export default {
 	name: 'app',
-	components: {}
+
+	// 注入依赖
+	provide() {
+		return {
+			app: this
+		};
+	},
+
+	components: {
+		imageDialog
+	},
+
+	data() {
+		return {
+			// 最多选中图片限制
+			maxChooseImage: 9
+		};
+	},
+
+	methods: {
+		chooseImage(callback, max = 9) {
+			this.maxChooseImage = max;
+			this.$refs.imageDialog.chooseImage(callback);
+		}
+	}
 };
 </script>
 

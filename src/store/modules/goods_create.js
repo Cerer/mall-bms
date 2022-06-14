@@ -22,25 +22,138 @@ export default {
 
 		// 规格卡片
 		sku_card: [{
-			name: '颜色', //规格名称
-			type: 0, //规格类型0无，1颜色，2图片
-			list: [{
-					name: '黄色',
-					image: '',
-					color: ''
-				},
-				{
-					name: '红色',
-					image: '',
-					color: ''
-				}
-			]
+				name: '颜色', //规格名称
+				type: 0, //规格类型0无，1颜色，2图片
+				list: [{
+						name: '黄色',
+						image: '',
+						color: ''
+					},
+					{
+						name: '红色',
+						image: '',
+						color: ''
+					}
+				]
+			},
+			{
+				name: '类型',
+				type: 0,
+				list: [{
+						name: '大小',
+						image: '',
+						color: ''
+					},
+					{
+						name: '型号',
+						image: '',
+						color: ''
+					}
+				]
 
-		}]
+			}
+		],
+
+		//规格设置表头
+		ths: [{
+				name: '商品规格',
+				rowspan: 1,
+				colspan: 1,
+				width: ''
+			},
+			{
+				name: 'sku图片',
+				rowspan: 2,
+				width: '60'
+			},
+			{
+				name: '销售价',
+				rowspan: 2,
+				width: '100'
+			},
+			{
+				name: '市场价',
+				rowspan: 2,
+				width: '100'
+			},
+			{
+				name: '成本价',
+				rowspan: 2,
+				width: '100'
+			},
+			{
+				name: '库存',
+				rowspan: 2,
+				width: '100'
+			},
+			{
+				name: '体积',
+				rowspan: 2,
+				width: '100'
+			},
+			{
+				name: '重量',
+				rowspan: 2,
+				width: '100'
+			},
+			{
+				name: '编码',
+				rowspan: 2,
+				width: '100'
+			}
+		]
 
 	},
 
-	getter: {},
+	getters: {
+		// 处理表头长度
+		skuLabels(state) {
+			return state.sku_card.filter(v => {
+				return v.list.length > 0;
+			})
+		},
+
+		// 获取表头
+		tableThs(state, getters) {
+			let length = getters.skuLabels.length;
+			state.ths[0].rowspan = length > 0 ? 1 : 2;
+			state.ths[0].colspan = length;
+			return state.ths;
+		},
+
+		// 获取规格设置表格数据
+		tableData(state) {
+			if (state.sku_card.length === 0) {
+				return [];
+			}
+
+			let sku_list = [];
+			for (let i = 0; i < state.sku_card.length; i++) {
+				if (state.sku_card[i].list.length > 0) {
+					sku_list.push(state.sku_card[i].list);
+				}
+			}
+
+			if (sku_list.length === 0) {
+				return [];
+			}
+
+			let arr = $Util.cartesianProductOf(...sku_list);
+			return arr.map(v => {
+				return {
+					skus: v, //商品规格
+					image: '', //sku图片
+					pprice: 0, // 销售价格
+					oprice: 0, //市场价格
+					cprice: 0, //成本价格
+					stock: 0, //库存
+					volume: 0, //体积
+					weight: 0, //重量
+					code: '' //编码
+				}
+			});
+		}
+	},
 
 	mutations: {
 		// 修改state
@@ -107,6 +220,14 @@ export default {
 			value
 		}) {
 			state.sku_card[cardIndex].list[listIndex][key] = value;
+		},
+
+		// 排序规格卡片的规格属性列表
+		sortSkuValue(state, {
+			index,
+			list
+		}) {
+			state.sku_card[index].list = list;
 		}
 	},
 

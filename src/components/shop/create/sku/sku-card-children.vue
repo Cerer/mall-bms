@@ -1,4 +1,4 @@
-<!-- 创建商品--商品属性--多规格--规格属性列表 -->
+<!-- 创建商品--商品规格--多规格--添加规格值 -->
 <template>
 	<div class="border py-1 px-2 rounded mr-2 position-relative d-flex align-items-center">
 		<div v-if="type != 0">
@@ -6,7 +6,18 @@
 			<el-color-picker v-if="type === 1" size="mini"></el-color-picker>
 
 			<!-- 图片选择 -->
-			<div v-else class="btn btn-light border"><i class="el-icon-plus"></i></div>
+			<template v-else>
+				<div v-if="!item.image" class="btn btn-light border" @click="chooesImg"><i class="el-icon-plus"></i></div>
+
+				<img
+					v-else
+					:src="item.image"
+					alt=""
+					class="rounded"
+					style="width: 45px;height: 45px;cursor: pointer;"
+					@click="chooesImg"
+				/>
+			</template>
 		</div>
 
 		<input
@@ -30,6 +41,8 @@
 <script>
 import { mapMutations } from 'vuex';
 export default {
+	inject: ['app'],
+
 	props: {
 		type: {
 			type: Number,
@@ -48,6 +61,7 @@ export default {
 			this.vModel('name', e.target.value);
 		},
 
+		// 修改函数
 		vModel(key, value) {
 			this.updateSkuValue({
 				cardIndex: this.cardIndex,
@@ -55,6 +69,13 @@ export default {
 				key,
 				value
 			});
+		},
+
+		// 选择图片
+		chooesImg() {
+			this.app.chooseImage(res => {
+				this.vModel('image', res[0].src);
+			}, 1);
 		}
 	}
 };

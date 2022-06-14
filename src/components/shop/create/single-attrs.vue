@@ -1,4 +1,4 @@
-<!-- 创建商品--商品属性--统一规格 -->
+<!-- 创建商品--商品规格--统一规格 -->
 <template>
 	<div>
 		<el-form label-position="right" label-width="80px">

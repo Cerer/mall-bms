@@ -10,6 +10,10 @@ Vue.prototype.$conf = $conf;
 // 引入Vuex
 import store from './store'
 
+// 引入拖曳排序组件
+import VueDND from 'awe-dnd'
+Vue.use(VueDND)
+
 // 全局组件
 import ButtonSearch from '@/components/common/button-search.vue' //搜索按钮组件
 Vue.component('ButtonSearch', ButtonSearch)
