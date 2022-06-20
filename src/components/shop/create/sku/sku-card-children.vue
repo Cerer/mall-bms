@@ -3,7 +3,7 @@
 	<div class="border py-1 px-2 rounded mr-2 position-relative d-flex align-items-center">
 		<div v-if="type != 0">
 			<!-- 颜色选择器 -->
-			<el-color-picker v-if="type === 1" size="mini"></el-color-picker>
+			<el-color-picker v-if="type === 1" :value="item.color" size="mini" @change="onColorChange"></el-color-picker>
 
 			<!-- 图片选择 -->
 			<template v-else>
@@ -76,6 +76,11 @@ export default {
 			this.app.chooseImage(res => {
 				this.vModel('image', res[0].src);
 			}, 1);
+		},
+
+		// 修改颜色
+		onColorChange(e) {
+			this.vModel('color', e);
 		}
 	}
 };

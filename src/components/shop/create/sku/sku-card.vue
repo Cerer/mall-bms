@@ -5,7 +5,7 @@
 			<div class="card-header d-flex align-items-center">
 				规格项：
 				<el-input :value="item.name" @input="vModel('name', $event, index)" size="mini" style="width: 200px;">
-					<el-button slot="append" icon="el-icon-more"></el-button>
+					<el-button slot="append" icon="el-icon-more" @click="chooseSkus"></el-button>
 				</el-input>
 				<el-radio-group
 					:value="item.type"
@@ -66,6 +66,8 @@
 import skuCardChildren from './sku-card-children.vue';
 import { mapMutations } from 'vuex';
 export default {
+	inject: ['app'],
+
 	props: {
 		item: Object,
 		index: Number,
@@ -89,6 +91,10 @@ export default {
 	},
 
 	mounted() {
+		this.$watch('item.list', (newValue, oldValue) => {
+			this.list = newValue;
+		});
+		
 		// 监听拖拽过程
 		// this.$dragging.$on('dragged', ({value}) => {
 		// 	console.log(value);
@@ -116,6 +122,16 @@ export default {
 		// 卡片排序
 		sortCard(action, index) {
 			this.sortSkuCard({ action, index });
+		},
+
+		// 选中规格
+		chooseSkus() {
+			this.app.chooseSkus(res => {
+				this.vModel('name', res.name, this.index);
+				this.vModel('type', res.type, this.index);
+				this.vModel('list', res.list, this.index);
+				this.list = res.list;
+			});
 		}
 	}
 };

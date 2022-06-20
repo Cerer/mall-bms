@@ -4,11 +4,15 @@
 
 		<!-- 选择相册弹框 -->
 		<image-dialog ref="imageDialog" :max="maxChooseImage"></image-dialog>
+		
+		<!-- 选中规格 -->
+		<skus-dialog ref="skusDialog"></skus-dialog>
 	</div>
 </template>
 
 <script>
 import imageDialog from '@/components/image/image-dialog.vue';
+import skusDialog from '@/components/skus/skus-dialog.vue';
 export default {
 	name: 'app',
 
@@ -20,7 +24,8 @@ export default {
 	},
 
 	components: {
-		imageDialog
+		imageDialog,
+		skusDialog
 	},
 
 	data() {
@@ -31,10 +36,16 @@ export default {
 	},
 
 	methods: {
+		// 选中图片
 		chooseImage(callback, max = 9) {
 			this.maxChooseImage = max;
 			this.$refs.imageDialog.chooseImage(callback);
-		}
+		},
+		
+		// 选中规格
+		chooseSkus(callback) {
+			this.$refs.skusDialog.chooseSkus(callback);
+		},
 	}
 };
 </script>

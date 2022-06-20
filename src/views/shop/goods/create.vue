@@ -42,12 +42,14 @@
 
 					<el-form label-position="right" label-width="80px">
 						<el-form-item label="批量设置">
-							<el-button type="text">销售价</el-button>
-							<el-button type="text">市场价</el-button>
-							<el-button type="text">成本价</el-button>
-							<el-button type="text">库存</el-button>
-							<el-button type="text">体积</el-button>
-							<el-button type="text">重量</el-button>
+							<el-button
+								v-for="(btnItem, btnIndex) in updateList"
+								:key="btnIndex"
+								type="text"
+								@click="changeUpdate(btnItem)"
+							>
+								{{ btnItem.name }}
+							</el-button>
 						</el-form-item>
 						<el-form-item label="规格设置"><sku-table></sku-table></el-form-item>
 					</el-form>
@@ -55,7 +57,7 @@
 			</el-tab-pane>
 			<el-tab-pane label="商品属性">商品属性</el-tab-pane>
 			<el-tab-pane label="媒体设置">媒体设置</el-tab-pane>
-			<el-tab-pane label="商品详情">商品详情</el-tab-pane>
+			<el-tab-pane label="商品详情"><tinymce ref="tinymceEditor" v-model="msg" @onClick="onClick"></tinymce></el-tab-pane>
 			<el-tab-pane label="折扣设置">折扣设置</el-tab-pane>
 		</el-tabs>
 	</div>
@@ -66,19 +68,32 @@ import baseCreate from '@/components/shop/create/base-create.vue';
 import singleAttrs from '@/components/shop/create/single-attrs.vue';
 import skuCard from '@/components/shop/create/sku/sku-card.vue';
 import skuTable from '@/components/shop/create/sku-table.vue';
+import tinymce from '@/components/common/tinymce.vue';
 import { mapState, mapMutations } from 'vuex';
 export default {
 	components: {
 		baseCreate,
 		singleAttrs,
 		skuCard,
-		skuTable
+		skuTable,
+		tinymce
 	},
 
 	data() {
 		return {
 			// tabs默认选择第一个
-			tabIndex: 0
+			tabIndex: 0,
+
+			msg: 'Welcome to Use Tinymce Editor',
+
+			updateList: [
+				{ name: '销售价', key: 'oprice' },
+				{ name: '市场价', key: 'pprice' },
+				{ name: '成本价', key: 'cprice' },
+				{ name: '库存', key: 'stock' },
+				{ name: '体积', key: 'volume' },
+				{ name: '重量', key: 'weight' }
+			]
 		};
 	},
 
@@ -104,7 +119,37 @@ export default {
 		},
 
 		// tabs切换获取数据
-		handleClick(tab, event) {}
+		handleClick(tab, event) {},
+
+		// 富文本点击
+		onClick(e, editor) {
+			console.log('click');
+			console.log(e);
+			console.log(editor);
+		},
+
+		// 批量设置
+		changeUpdate(btnItem) {
+			let self = this;
+			this.$prompt(`请输入${btnItem.name}`, '提示', {
+				confirmButtonText: '确定',
+				cancelButtonText: '取消',
+				inputType: 'number',
+				inputValidator(val) {
+					console.log(val);
+					if (val === '' || val === null) {
+						return '输入内容不能为空';
+					}
+				}
+			})
+				.then(({ value }) => {
+					this.$message({
+						type: 'success',
+						message: '批量设置' + btnItem.name + '值成功'
+					});
+				})
+				.catch(() => {});
+		}
 	}
 };
 </script>
