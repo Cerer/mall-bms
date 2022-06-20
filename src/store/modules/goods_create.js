@@ -14,8 +14,8 @@ export default {
 		express: '', //运费模板
 
 		skus_type: 0, // 商品规格类型(0单规格，1多规格)
-		oprice: 0, //市场价格
 		pprice: 0, //销售价格
+		oprice: 0, //市场价格
 		cprice: 0, //成本价格
 		weight: 0, //重量
 		volume: 0, //体积
@@ -101,8 +101,21 @@ export default {
 				rowspan: 2,
 				width: '100'
 			}
-		]
+		],
 
+		// 商品大图
+		banners: [],
+
+		// 商品类型
+		goods_type_id: '',
+
+		// 商品属性
+		goods_attrs: {
+			phone_model: ''
+		},
+
+		// 折扣
+		discount: 0
 	},
 
 	getters: {
@@ -228,7 +241,15 @@ export default {
 			list
 		}) {
 			state.sku_card[index].list = list;
-		}
+		},
+
+		// 修改商品属性
+		vModelGoodsAttrs(state, {
+			key,
+			value
+		}) {
+			state.goods_attrs[key] = value;
+		},
 	},
 
 	actions: {}

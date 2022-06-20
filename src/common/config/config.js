@@ -37,7 +37,8 @@ export default {
 					},
 					{
 						icon: 'el-icon-menu',
-						name: '商品分类'
+						name: '商品分类',
+						pathname: 'shop_category_list'
 					},
 					{
 						icon: 'el-icon-help',
