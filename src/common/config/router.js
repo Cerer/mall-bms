@@ -42,6 +42,54 @@ let routes = [{
 					title: '分类管理'
 				},
 				component: 'shop/category/list',
+			},
+			{
+				meta: {
+					title: '商品规格'
+				},
+				component: 'shop/sku/list',
+			},
+			{
+				meta: {
+					title: '商品类型'
+				},
+				component: 'shop/type/list',
+			},
+			{
+				meta: {
+					title: '商品评论'
+				},
+				component: 'shop/comment/list',
+			},
+			{
+				meta: {
+					title: '订单列表'
+				},
+				component: 'order/order/list',
+			},
+			{
+				meta: {
+					title: '发票管理'
+				},
+				component: 'order/invoice/list',
+			},
+			{
+				meta: {
+					title: '售后管理'
+				},
+				component: 'order/after-sale/list',
+			},
+			{
+				meta: {
+					title: '会员列表'
+				},
+				component: 'user/user-list/list',
+			},
+			{
+				meta: {
+					title: '会员等级'
+				},
+				component: 'user/user-level/list',
 			}
 		]
 	},

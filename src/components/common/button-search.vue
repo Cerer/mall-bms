@@ -6,7 +6,7 @@
 			<slot name="left"></slot>
 
 			<!-- 右边 -->
-			<div v-if="!superSearch" class="ml-auto">
+			<div v-show="!superSearch" v-if="showSearch" class="ml-auto">
 				<slot name="right">
 					<el-input
 						v-model="keyword"
@@ -37,9 +37,16 @@
 <script>
 export default {
 	props: {
+		// 提示语
 		placeholder: {
 			type: String,
 			default: ''
+		},
+
+		// 是否显示高级搜索
+		showSearch: {
+			type: Boolean,
+			default: true
 		}
 	},
 
