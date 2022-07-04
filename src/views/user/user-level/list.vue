@@ -145,7 +145,7 @@ export default {
 			// 升级标注
 			level: 0,
 
-			// 商品表格数据
+			// 会员等级数据
 			tableData: [
 				{
 					id: 10,

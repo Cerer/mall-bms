@@ -4,7 +4,7 @@
 
 		<!-- 选择相册弹框 -->
 		<image-dialog ref="imageDialog" :max="maxChooseImage"></image-dialog>
-		
+
 		<!-- 选中规格 -->
 		<skus-dialog ref="skusDialog"></skus-dialog>
 	</div>
@@ -35,17 +35,25 @@ export default {
 		};
 	},
 
+	created() {
+		// 初始化用户信息
+		this.$store.commit('initUser');
+		
+		// 初始化后台菜单
+		this.$store.commit('initNavBar');
+	},
+
 	methods: {
 		// 选中图片
 		chooseImage(callback, max = 9) {
 			this.maxChooseImage = max;
 			this.$refs.imageDialog.chooseImage(callback);
 		},
-		
+
 		// 选中规格
 		chooseSkus(callback) {
 			this.$refs.skusDialog.chooseSkus(callback);
-		},
+		}
 	}
 };
 </script>

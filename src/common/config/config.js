@@ -98,19 +98,23 @@ export default {
 				subActive: '4',
 				submenu: [{
 						icon: 'el-icon-setting',
-						name: '基础设置'
+						name: '基础设置',
+						pathname: 'set_base'
 					},
 					{
 						icon: 'el-icon-s-promotion',
-						name: '物流设置'
+						name: '物流设置',
+						pathname: 'set_express'
 					},
 					{
 						icon: 'el-icon-s-custom',
-						name: '管理员管理'
+						name: '管理员管理',
+						pathname: 'set_manager'
 					},
 					{
 						icon: 'el-icon-s-finance',
-						name: '交易设置'
+						name: '交易设置',
+						pathname: 'set_payment'
 					}
 				]
 			}

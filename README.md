@@ -1,6 +1,12 @@
 # mall-bms
 商城后台管理系统，vue-cli+element+vue-router
 
+超级管理员
+账号-密码：admin-admin
+
+运营人员
+账号-密码：admin22-admin
+
 ## Project setup
 ```
 npm install

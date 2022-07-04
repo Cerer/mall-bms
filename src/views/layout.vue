@@ -18,9 +18,13 @@
 						<template slot="title">
 							<el-avatar
 								size="small"
-								src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png"
+								:src="
+									user.avatar
+										? user.avatar
+										: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+								"
 							></el-avatar>
-							Summer
+							{{ user.username }}
 						</template>
 						<el-menu-item index="100-1">修改</el-menu-item>
 						<el-menu-item index="100-2">退出</el-menu-item>
@@ -67,32 +71,40 @@
 
 <script>
 import common from '@/common/mixins/common.js';
+import { mapState } from 'vuex';
 export default {
 	mixins: [common],
 
 	data() {
 		return {
-			// 侧边导航数据
-			navBar: [],
-
 			// 面包屑数据
 			bran: []
 		};
 	},
 
 	computed: {
+		...mapState({
+			user: state => state.user.user,
+			navBar: state => state.menu.navBar
+		}),
+
 		sildeMenuActive: {
 			get() {
-				return this.navBar.list[this.navBar.active].subActive || '0';
+				let item = this.navBar.list[this.navBar.active];
+				return item ? item.subActive : '0';
 			},
 
 			set(val) {
-				this.navBar.list[this.navBar.active].subActive = val;
+				let item = this.navBar.list[this.navBar.active];
+				if (item) {
+					item.subActive = val;
+				}
 			}
 		},
 
 		sildeMenus() {
-			return this.navBar.list[this.navBar.active].submenu || [];
+			let item = this.navBar.list[this.navBar.active];
+			return item ? item.submenu : [];
 		}
 	},
 
@@ -112,8 +124,6 @@ export default {
 	},
 
 	created() {
-		this.navBar = this.$conf.navBar;
-
 		// 获取面包屑导航数据
 		this.getRouterBran();
 
@@ -155,11 +165,12 @@ export default {
 			if (key === '100-1') {
 				return console.log('修改资料');
 			}
-			
+
 			if (key === '100-2') {
-				return console.log('退出');
+				//退出登录
+				return this.logout();
 			}
-			
+
 			this.navBar.active = key;
 
 			// 默认选中跳转到当前激活
@@ -179,6 +190,39 @@ export default {
 			this.$router.push({
 				name: this.sildeMenus[key].pathname
 			});
+		},
+
+		//退出登录
+		logout() {
+			this.axios
+				.post(
+					'/admin/logout',
+					{},
+					{
+						token: true,
+						loading: true
+					}
+				)
+				.then(res => {
+					//1.退出成功提示
+					this.$message({
+						type: 'success',
+						message: '退出成功'
+					});
+
+					// 2.清空数据
+					this.$store.commit('logout');
+
+					//3.返回登录页
+					this.$router.push({ name: 'login' });
+				})
+				.catch(err => {
+					// 2.清空数据
+					this.$store.commit('logout');
+
+					//3.返回登录页
+					this.$router.push({ name: 'login' });
+				});
 		}
 	}
 };

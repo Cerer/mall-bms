@@ -169,7 +169,7 @@ export default {
 				time: ''
 			},
 
-			// 商品表格数据
+			//会员列表数据
 			tableData: [
 				{
 					id: 10,
