@@ -8,11 +8,11 @@
 			@click.stop="$emit('change', index)"
 		>
 			{{ item.name }}
-			<span v-if="!showOptions" class="btn btn-light btn-sm border ml-auto">{{ item.num }}</span>
+			<span v-if="!showOptions" class="btn btn-light btn-sm border ml-auto">{{ item.images_count }}</span>
 
 			<el-dropdown v-else class="ml-auto">
 				<span class="btn btn-light btn-sm border">
-					{{ item.num }}
+					{{ item.images_count }}
 					<i class="el-icon-arrow-down el-icon--right"></i>
 				</span>
 				<el-dropdown-menu slot="dropdown">

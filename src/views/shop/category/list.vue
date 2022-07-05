@@ -13,10 +13,11 @@
 			:expand-on-click-node="false"
 			draggable
 			@node-drop="nodeDrop"
+			@node-drag-end="nodeDragEnd"
 		>
 			<span class="custom-tree-node" slot-scope="{ node, data }">
 				<div>
-					<el-input v-if="data.editStatus" v-model="data.label" size="mini"></el-input>
+					<el-input v-if="data.editStatus" v-model="data.name" size="mini"></el-input>
 					<span v-else>{{ node.label }}</span>
 				</div>
 
@@ -37,39 +38,78 @@
 
 <script>
 export default {
+	inject: ['layout'],
+
 	data() {
 		return {
-			data: [
-				{
-					id: 1,
-					label: '一级 1',
-					status: 1,
-					editStatus: false,
-					children: [
-						{
-							id: 2,
-							label: '二级 1-1',
-							status: 1,
-							editStatus: false,
-							children: [
-								{
-									id: 3,
-									label: '三级 1-1-1',
-									status: 1,
-									editStatus: false
-								}
-							]
-						}
-					]
-				}
-			],
+			data: [],
 			defaultProps: {
-				children: 'children',
-				label: 'label'
+				children: 'child',
+				label: 'name'
 			}
 		};
 	},
+
+	computed: {
+		// 排序后数据
+		sortData() {
+			let data = [];
+			let sort = function(arr) {
+				arr.forEach(i => {
+					data.push(i);
+					if (i.child.length) {
+						sort(i.child);
+					}
+				});
+			};
+			// 多维数组转为一维数组
+			sort(this.data);
+
+			// 排序后数据
+			data = data.map((item, index) => {
+				return {
+					id: item.id,
+					order: index,
+					category_id: item.category_id
+				};
+			});
+			return data;
+		}
+	},
+
+	created() {
+		this.__init();
+	},
+
 	methods: {
+		// 初始化数据
+		__init() {
+			let self = this;
+			self.layout.showLoading();
+			self.axios
+				.get('/admin/category', {
+					token: true
+				})
+				.then(res => {
+					let data = res.data.data;
+					let addEditStatus = function(arr) {
+						arr.forEach(item => {
+							item.editStatus = false;
+							if (item.child.length) {
+								addEditStatus(item.child);
+							}
+						});
+					};
+
+					addEditStatus(data);
+					self.data = data;
+					self.layout.hideLoading();
+				})
+				.catch(() => {
+					self.layout.hideLoading();
+				});
+		},
+
 		// 点击节点
 		handleNodeClick(data) {
 			console.log(data);
@@ -77,57 +117,174 @@ export default {
 
 		// 显示/隐藏
 		showOrHide(data) {
-			data.status = data.status ? 0 : 1;
+			let self = this;
+			let status = data.status ? 0 : 1;
+			let mag = status ? '显示' : '隐藏';
+			self.layout.showLoading();
+			self.axios
+				.post(
+					`/admin/category/${data.id}/update_status`,
+					{
+						status
+					},
+					{
+						token: true
+					}
+				)
+				.then(() => {
+					data.status = status;
+					self.layout.hideLoading();
+					self.$message({
+						type: 'success',
+						message: mag + '成功'
+					});
+				})
+				.catch(() => {
+					self.layout.hideLoading();
+				});
 		},
 
 		//修改/提交
 		edit(data) {
-			data.editStatus = !data.editStatus;
+			let self = this;
+			// 校验是否为
+			if (!data.editStatus) {
+				return (data.editStatus = true);
+			}
+
+			// 校验名称
+			if (data.name == '') {
+				return self.$message.error('分类名称不能为空');
+			}
+
+			self.layout.showLoading();
+			self.axios
+				.post(
+					`/admin/category/${data.id}`,
+					{
+						status: data.status,
+						name: data.name,
+						category_id: data.category_id
+					},
+					{
+						token: true
+					}
+				)
+				.then(() => {
+					self.layout.hideLoading();
+					self.$message({
+						type: 'success',
+						message: '修改成功'
+					});
+					data.editStatus = false;
+				})
+				.catch(() => {
+					self.layout.hideLoading();
+				});
 		},
 
 		// 新增子分类
 		append(data) {
-			let newObj = {
-				id: 2,
-				label: '二级 1-1',
-				status: 1,
-				editStatus: true,
-				children: []
-			};
-			data.children.push(newObj);
+			let self = this;
+			self.layout.showLoading();
+
+			self.axios
+				.post(
+					`/admin/category`,
+					{
+						status: 0,
+						name: '新分类',
+						category_id: data.id
+					},
+					{
+						token: true
+					}
+				)
+				.then(res => {
+					let obj = res.data.data;
+					obj.editStatus = true;
+					obj.child = [];
+					data.child.push(obj);
+					self.layout.hideLoading();
+				})
+				.catch(() => {
+					self.layout.hideLoading();
+				});
 		},
 
 		//删除
 		remove(node, data) {
-			this.$confirm('此操作将删除该分类, 是否继续?', '提示', {
+			let self = this;
+			self.$confirm('此操作将删除该分类, 是否继续?', '提示', {
 				confirmButtonText: '确定',
 				cancelButtonText: '取消',
 				type: 'warning'
 			})
 				.then(() => {
-					let parent = node.parent;
-					let children = parent.data.children || parent.data;
-					let index = children.findIndex(v => {
-						v.id === data.id;
-					});
-					children.splice(index, 1);
-					this.$message({
-						type: 'success',
-						message: '删除成功!'
-					});
+					self.layout.showLoading();
+					self.axios
+						.delete(`/admin/category/${data.id}`, {
+							token: true
+						})
+						.then(() => {
+							self.layout.hideLoading();
+							self.$message({
+								type: 'success',
+								message: '删除成功!'
+							});
+							self.__init();
+						})
+						.catch(() => {
+							self.layout.hideLoading();
+						});
 				})
 				.catch(() => {});
 		},
 
 		// 节点拖拽
 		nodeDrop(...options) {
-			console.log(options[0].data);
-			console.log(options[1].data);
+			let self = this;
+			self.layout.showLoading();
+			self.axios
+				.post(
+					'/admin/category/sort',
+					{
+						sortdata: JSON.stringify(self.sortData)
+					},
+					{
+						token: true
+					}
+				)
+				.then(() => {
+					self.layout.hideLoading();
+					self.__init();
+				})
+				.catch(() => {
+					self.layout.hideLoading();
+				});
+		},
+
+		// 节点拖拽结束
+		nodeDragEnd(...options) {
+			//被拖拽节点对应的数据
+			let beforeItem = options[0].data;
+
+			//结束拖拽时最后进入的节点数据
+			let afterItem = options[1].data;
+
+			if (afterItem) {
+				if (options[2] === 'before' || options[2] === 'after') {
+					beforeItem.category_id = afterItem.category_id;
+				} else {
+					beforeItem.category_id = afterItem.id;
+				}
+			}
 		},
 
 		// 创建顶级分类
 		createTop() {
-			this.$prompt('请输入顶级分类名称', '提示', {
+			let self = this;
+			self.$prompt('请输入顶级分类名称', '提示', {
 				confirmButtonText: '创建',
 				cancelButtonText: '取消',
 				inputValidator(val) {
@@ -137,10 +294,30 @@ export default {
 				}
 			})
 				.then(({ value }) => {
-					this.$message({
-						type: 'success',
-						message: '创建分类' + value + '成功'
-					});
+					self.layout.showLoading();
+					self.axios
+						.post(
+							`/admin/category`,
+							{
+								status: 0,
+								name: value,
+								category_id: 0
+							},
+							{
+								token: true
+							}
+						)
+						.then(() => {
+							self.layout.hideLoading();
+							self.$message({
+								type: 'success',
+								message: '创建分类' + value + '成功'
+							});
+							self.__init();
+						})
+						.catch(() => {
+							self.layout.hideLoading();
+						});
 				})
 				.catch(() => {});
 		}

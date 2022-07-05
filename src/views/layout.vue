@@ -44,7 +44,7 @@
 				</el-aside>
 
 				<!-- 主布局 -->
-				<el-main class="bg-light" style="padding-bottom: 60px;position: relative;">
+				<el-main v-loading="loading" class="bg-light" style="padding-bottom: 60px;position: relative;">
 					<!-- 面包屑导航 -->
 					<div
 						v-if="bran.length > 0"
@@ -75,10 +75,19 @@ import { mapState } from 'vuex';
 export default {
 	mixins: [common],
 
+	provide() {
+		return {
+			layout: this
+		};
+	},
+
 	data() {
 		return {
 			// 面包屑数据
-			bran: []
+			bran: [],
+
+			// 页面是否显示加载圈
+			loading: false
 		};
 	},
 
@@ -132,6 +141,16 @@ export default {
 	},
 
 	methods: {
+		// 显示loading
+		showLoading() {
+			this.loading = true;
+		},
+
+		// 隐藏loading
+		hideLoading() {
+			this.loading = false;
+		},
+
 		//初始化选中菜单
 		__initNavBar() {
 			let list = localStorage.getItem('navActive');
