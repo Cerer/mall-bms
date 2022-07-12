@@ -12,8 +12,8 @@
 						style="width: 200px;"
 						class="mr-2"
 					>
-						<el-option label="区域一" value="1"></el-option>
-						<el-option label="区域二" value="2"></el-option>
+						<el-option label="降序" value="desc"></el-option>
+						<el-option label="升序" value="asc"></el-option>
 					</el-select>
 					<el-input
 						v-model="searchForm.keyword"
@@ -22,13 +22,18 @@
 						style="width: 200px;"
 						class="mr-2"
 					></el-input>
-					<el-button type="success" size="mini">搜索</el-button>
+					<el-button type="success" size="mini" @click="getImageList">搜索</el-button>
 				</div>
 			</el-header>
 
 			<el-container>
 				<!-- 侧边 | 相册列表 -->
-				<el-aside class="bg-white border-right" width="200px" style="position: absolute;top: 60px;left: 0;bottom: 60px;">
+				<el-aside
+					class="bg-white border-right"
+					width="200px"
+					style="position: absolute;top: 60px;left: 0;bottom: 60px;"
+					v-loading="asideLoading"
+				>
 					<ul class="list-group list-group-flush">
 						<album-item
 							v-for="(item, index) in albums"
@@ -44,7 +49,7 @@
 
 				<!-- 主内容 -->
 				<el-container>
-					<el-main style="position: absolute;top: 60px;left: 200px;right: 0;bottom: 60px;">
+					<el-main style="position: absolute;top: 60px;left: 200px;right: 0;bottom: 60px;" v-loading="mainLoading">
 						<el-row :gutter="20">
 							<el-col v-for="(item, index) in imagesList" :key="index" :span="24" :lg="4" :md="6" :sm="8">
 								<el-card
@@ -99,8 +104,19 @@
 					class="h-100 d-flex align-items-center justify-content-center border-right"
 				>
 					<el-button-group>
-						<el-button size="mini" icon="el-icon-arrow-left">上一页</el-button>
-						<el-button size="mini">
+						<el-button
+							size="mini"
+							icon="el-icon-arrow-left"
+							:disabled="albumPage === 1"
+							@click="changeAlbumPage('pre')"
+						>
+							上一页
+						</el-button>
+						<el-button
+							size="mini"
+							:disabled="albumPage === Math.ceil(albumTotal / 10)"
+							@click="changeAlbumPage('next')"
+						>
 							下一页
 							<i class="el-icon-arrow-right el-icon--right"></i>
 						</el-button>
@@ -112,10 +128,10 @@
 						@size-change="handleSizeChange"
 						@current-change="handleCurrentChange"
 						:current-page="currentPage"
-						:page-sizes="[100, 200, 300, 400]"
-						:page-size="100"
+						:page-sizes="pageSizes"
+						:page-size="pageSize"
 						layout="total, sizes, prev, pager, next, jumper"
-						:total="400"
+						:total="total"
 					></el-pagination>
 				</div>
 			</el-footer>
@@ -161,6 +177,12 @@ export default {
 			// 相册列表数据
 			albums: [],
 
+			// 相册类型列表分页默认显示页数
+			albumPage: 1,
+
+			// 相册类型列表总条数
+			albumTotal: 0,
+
 			// 判断是否是修改（大于-1为修改）
 			albumsEditIndex: -1,
 
@@ -170,23 +192,57 @@ export default {
 			//选中的数据
 			chooseList: [],
 
-			// 分页默认选中
-			currentPage: 1
+			// 相册图片分页默认显示页数
+			currentPage: 1,
+
+			// 相册图片分页每页显示条数
+			pageSize: 5,
+
+			// 相册图片分页每页显示条数选择
+			pageSizes: [5, 10, 20, 30, 40, 100],
+
+			// 相册图片列表总条数
+			total: 0,
+
+			// 侧边相册加载圈
+			asideLoading: false,
+
+			// 主内容图片列表加载圈
+			mainLoading: false
 		};
 	},
 
-	created() {
-		this.__init();
+	computed: {
+		//当前选中左边列表相册id
+		image_class_id() {
+			let item = this.albums[this.albumsIndex];
+			if (item) {
+				return item.id;
+			}
+			return 0;
+		},
+
+		// 当前选中相册的图片列表URL
+		getItemListUrl() {
+			let other = '';
+			if (this.searchForm.keyword !== '') {
+				other = `&keyword=${this.searchForm.keyword}`;
+			}
+			return `/admin/imageclass/${this.image_class_id}/image/${this.currentPage}?limit=${this.pageSize}&order=${
+				this.searchForm.order
+			}${other}`;
+		}
 	},
 
 	methods: {
 		// 显示相册弹框
 		chooseImage(callback) {
-			// 取消选中图片
-			this.unChoose();
-			
+			this.__init();
 			this.callback = callback;
 			this.showImgDialog = true;
+			
+			// 取消选中图片
+			this.unChoose();
 		},
 
 		// 隐藏相册弹框
@@ -208,28 +264,71 @@ export default {
 
 		// 初始化相册列表数据
 		__init() {
-			for (let i = 0; i < 20; i++) {
-				this.albums.push({
-					name: '相册' + i,
-					num: Math.floor(Math.random() * 100),
-					order: 0
-				});
-			}
+			let self = this;
+			self.asideLoading = true;
+			// 获取相册左边类型列表数据
+			self.axios
+				.get('/admin/imageclass/' + self.albumPage, {
+					token: true
+				})
+				.then(res => {
+					let data = res.data.data;
+					self.albums = data.list;
+					self.albumTotal = data.totalCount;
 
-			for (let i = 0; i < 30; i++) {
-				this.imagesList.push({
-					id: i,
-					src: 'https://fuss10.elemecdn.com/8/27/f01c15bb73e1ef3793e64e6b7bbccjpeg.jpeg',
-					name: '图片' + i,
-					isCheck: false,
-					checkOrder: 0
+					self.asideLoading = false;
+
+					//获取选中相册下的第一页图片列表
+					self.getImageList();
+				})
+				.catch(() => {
+					self.asideLoading = false;
 				});
-			}
+		},
+
+		// 获取图片列表数据
+		getImageList() {
+			let self = this;
+			self.mainLoading = true;
+			self.axios
+				.get(self.getItemListUrl, {
+					token: true
+				})
+				.then(item => {
+					let data = item.data.data;
+					this.imagesList = data.list.map(i => {
+						return {
+							id: i.id,
+							src: i.url,
+							name: i.name,
+							isCheck: false,
+							checkOrder: 0
+						};
+					});
+					self.total = data.totalCount;
+
+					self.mainLoading = false;
+				})
+				.catch(() => {
+					self.mainLoading = false;
+				});
 		},
 
 		// 切换相册
 		albumsChange(index) {
 			this.albumsIndex = index;
+			this.getImageList();
+		},
+
+		// 相册列表分页
+		changeAlbumPage(type) {
+			let self = this;
+			if (type === 'pre') {
+				self.albumPage--;
+			} else {
+				self.albumPage++;
+			}
+			self.__init();
 		},
 
 		// 选中图片

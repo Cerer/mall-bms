@@ -116,7 +116,7 @@
 						<el-button
 							size="mini"
 							icon="el-icon-arrow-left"
-							:disabled="currentPage === 1"
+							:disabled="albumPage === 1"
 							@click="changeAlbumPage('pre')"
 						>
 							上一页
@@ -639,7 +639,7 @@ export default {
 			} else {
 				self.albumPage++;
 			}
-			self.___init();
+			self.__init();
 		},
 
 		// 分页每页几条

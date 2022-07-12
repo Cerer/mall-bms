@@ -14,9 +14,10 @@
 						style="width: 150px;"
 						size="mini"
 						class="mr-2"
+						clearable
 					></el-input>
 					<el-button type="info" size="mini" @click="$emit('search', keyword)">搜索</el-button>
-					<el-button size="mini" @click="superSearch = true">高级搜索</el-button>
+					<el-button v-if="showsuperSearch" size="mini" @click="superSearch = true">高级搜索</el-button>
 				</slot>
 			</div>
 		</div>
@@ -43,8 +44,14 @@ export default {
 			default: ''
 		},
 
-		// 是否显示高级搜索
+		// 是否搜索右边内容
 		showSearch: {
+			type: Boolean,
+			default: true
+		},
+
+		// 是否显示高级搜索按钮
+		showsuperSearch: {
 			type: Boolean,
 			default: true
 		}

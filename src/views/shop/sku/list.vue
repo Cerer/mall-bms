@@ -12,7 +12,7 @@
 		<el-table :data="tableData" class="mt-3" border @selection-change="handleSelectionChange">
 			<el-table-column type="selection" width="45" align="center"></el-table-column>
 			<el-table-column prop="name" label="规格名称"></el-table-column>
-			<el-table-column prop="value" label="规格值" width="400" align="center"></el-table-column>
+			<el-table-column prop="default" label="规格值" width="400" align="center"></el-table-column>
 			<el-table-column prop="order" label="排序" align="center"></el-table-column>
 			<el-table-column prop="status" label="状态" align="center" width="150">
 				<template slot-scope="scope">
@@ -25,7 +25,7 @@
 				<template slot-scope="scope">
 					<el-button-group>
 						<el-button type="success" size="mini" plain @click="openModel(scope)">编辑</el-button>
-						<el-button type="danger" size="mini" plain @click="deteleItem(scope.$index)">删除</el-button>
+						<el-button type="danger" size="mini" plain @click="deteleItem(scope.row)">删除</el-button>
 					</el-button-group>
 				</template>
 			</el-table-column>
@@ -39,20 +39,20 @@
 			style="bottom: 0;left: 200px;right: 0;z-index: 100;"
 		>
 			<div style="flex: 1;" class="px-2">
-				<!-- @size-change="handleSizeChange"
-					@current-change="handleCurrentChange" -->
 				<el-pagination
-					:current-page="currentPage"
-					:page-sizes="[100, 200, 300, 400]"
-					:page-size="100"
+					:current-page="page.current"
+					:page-sizes="page.sizes"
+					:page-size="page.size"
 					layout="total, sizes, prev, pager, next, jumper"
-					:total="400"
+					:total="page.total"
+					@size-change="handleSizeChange"
+					@current-change="handleCurrentChange"
 				></el-pagination>
 			</div>
 		</el-footer>
 
 		<!-- 新增/修改弹框 -->
-		<el-dialog title="添加规格" :visible.sync="createModel" top="5vh">
+		<el-dialog :title="editIndex > -1 ? '修改规格' : '添加规格'" :visible.sync="createModel" top="5vh">
 			<el-form ref="form" :model="form" :rules="rules" label-width="80px">
 				<el-form-item label="规格名称" prop="name">
 					<el-input v-model="form.name" placeholder="请输入规格名称" size="mini"></el-input>
@@ -73,9 +73,9 @@
 						<el-radio :label="2" border>图片</el-radio>
 					</el-radio-group>
 				</el-form-item>
-				<el-form-item label="规格值" prop="value">
+				<el-form-item label="规格值" prop="default">
 					<el-input
-						v-model="form.value"
+						v-model="form.default"
 						type="textarea"
 						:rows="2"
 						placeholder="一行为一个规格项,多个规格项用换行输入"
@@ -91,50 +91,19 @@
 </template>
 
 <script>
+import common from '@/common/mixins/common.js';
 export default {
+	inject: ['layout'],
+
+	mixins: [common],
+
 	data() {
 		return {
+			// 接口标识
+			preUrl: 'skus',
+
 			// 商品表格数据
-			tableData: [
-				{
-					id: 1,
-					name: '颜色1',
-					value: '棕色,蓝色',
-					order: 50,
-					status: 1,
-					type: 1
-				},
-				{
-					id: 2,
-					name: '颜色2',
-					value: '棕色,蓝色',
-					order: 50,
-					status: 1,
-					type: 1
-				},
-				{
-					id: 3,
-					name: '颜色3',
-					value: '棕色,蓝色',
-					order: 50,
-					status: 1,
-					type: 1
-				},
-				{
-					id: 4,
-					name: '颜色4',
-					value: '棕色,蓝色',
-					order: 50,
-					status: 1,
-					type: 1
-				}
-			],
-
-			// 分页当前页码
-			currentPage: 1,
-
-			// 表格多选数据
-			multipleSelection: [],
+			tableData: [],
 
 			// 是否显示添加/修改规格弹框
 			createModel: false,
@@ -145,13 +114,13 @@ export default {
 				order: 50,
 				status: 1,
 				type: 0,
-				value: ''
+				default: ''
 			},
 
 			// 表单校验
 			rules: {
 				name: [{ required: true, message: '规格名称不能为空', trigger: 'blur' }],
-				value: [{ required: true, message: '规格值不能为空', trigger: 'blur' }]
+				default: [{ required: true, message: '规格值不能为空', trigger: 'blur' }]
 			},
 
 			// 判断是新增还是编辑大于-1为修改
@@ -159,26 +128,10 @@ export default {
 		};
 	},
 
-	created() {
-		this.__getData();
-	},
-
 	methods: {
-		// 获取表格数据
-		__getData() {},
-
-		// 商品表格多选
-		handleSelectionChange(val) {
-			this.multipleSelection = val;
-		},
-
-		// 修改状态
-		changeStatus(item) {
-			item.status = !item.status;
-			this.$message({
-				message: item.status ? '启用' : '禁用',
-				type: 'success'
-			});
+		// 获取列表数据
+		getListResult(data) {
+			this.tableData = data.list;
 		},
 
 		// 打开添加/修改规格弹框
@@ -190,7 +143,7 @@ export default {
 					order: 50,
 					status: 1,
 					type: 0,
-					value: ''
+					default: ''
 				};
 				this.editIndex = -1;
 			} else {
@@ -200,7 +153,7 @@ export default {
 					order: e.row.order,
 					status: e.row.status,
 					type: e.row.type,
-					value: e.row.value.replace(/,/g, '\n')
+					default: e.row.default.replace(/,/g, '\n')
 				};
 				this.editIndex = e.$index;
 			}
@@ -210,70 +163,19 @@ export default {
 
 		// 提交规格
 		submit() {
-			this.$refs.form.validate(valid => {
+			let self = this;
+			self.$refs.form.validate(valid => {
 				if (valid) {
-					let msg = '添加成功';
-					this.form.value = this.form.value.replace(/\n/g, ',');
-					if (this.editIndex === -1) {
-						this.tableData.unshift(this.form);
-					} else {
-						msg = '修改成功';
-						let list = this.tableData[this.editIndex];
-						list.name = this.form.name;
-						list.order = this.form.order;
-						list.status = this.form.status;
-						list.type = this.form.type;
-						list.value = this.form.value;
+					self.form.default = self.form.default.replace(/\n/g, ',');
+					let id = 0;
+					if (self.editIndex !== -1) {
+						id = self.tableData[self.editIndex].id;
 					}
-
+					//调用common/mixins/common.js混入里封装的新增/编辑
+					self.addOrEdit(self.form, id);
 					this.createModel = false;
-					this.$message({
-						message: msg,
-						type: 'success'
-					});
 				}
 			});
-		},
-
-		// 删除规格
-		deteleItem(index) {
-			this.$confirm('是否确认删除规格?', '提示', {
-				confirmButtonText: '确定',
-				cancelButtonText: '取消',
-				type: 'warning'
-			})
-				.then(() => {
-					this.tableData.splice(index, 1);
-					this.$message({
-						type: 'success',
-						message: '删除成功!'
-					});
-				})
-				.catch(() => {});
-		},
-
-		//批量删除规格数据
-		deteleAll() {
-			this.$confirm('是否确认批量删除规格?', '提示', {
-				confirmButtonText: '确定',
-				cancelButtonText: '取消',
-				type: 'warning'
-			})
-				.then(() => {
-					this.multipleSelection.forEach(v => {
-						let index = this.tableData.findIndex(i => i.id === v.id);
-
-						if (index != -1) {
-							this.tableData.splice(index, 1);
-						}
-					});
-					this.$message({
-						type: 'success',
-						message: '删除成功!'
-					});
-					this.multipleSelection = [];
-				})
-				.catch(() => {});
 		}
 	}
 };

@@ -14,21 +14,16 @@
 						<el-input v-model="search.keyword" placeholder="手机号/邮箱/会员昵称" size="mini"></el-input>
 					</el-form-item>
 					<el-form-item label="会员等级" class="mb-0">
-						<el-select v-model="search.group_id" placeholder="请选择会员等级" size="mini">
-							<el-option label="区域一" value="shanghai"></el-option>
-							<el-option label="区域二" value="beijing"></el-option>
+						<el-select v-model="search.user_level_id" placeholder="请选择会员等级" size="mini">
+							<el-option
+								v-for="(item, index) in user_level"
+								:key="index"
+								:label="item.name"
+								:value="item.id"
+							></el-option>
 						</el-select>
 					</el-form-item>
-					<el-form-item label="发布时间" class="mb-0">
-						<el-date-picker
-							v-model="search.time"
-							type="daterange"
-							size="mini"
-							range-separator="至"
-							start-placeholder="开始日期"
-							end-placeholder="结束日期"
-						></el-date-picker>
-					</el-form-item>
+
 					<el-form-item class="mb-0">
 						<el-button type="info" size="mini" @click="searchEvent">搜索</el-button>
 						<el-button size="mini" @click="clearSearch">清空筛选条件</el-button>
@@ -54,25 +49,26 @@
 			</el-table-column>
 			<el-table-column label="会员等级" align="center">
 				<template slot-scope="scope">
-					{{ scope.row.level.name }}
+					{{ scope.row.user_level ? scope.row.user_level.name : '' }}
 				</template>
 			</el-table-column>
 			<el-table-column label="注册/登录" width="300" align="center">
 				<template slot-scope="scope">
 					<div>注册时间：{{ scope.row.create_time }}</div>
-					<div>最后登录：{{ scope.row.update_time }}</div>
+					<div>最后登录：{{ scope.row.last_login_time }}</div>
 				</template>
 			</el-table-column>
 			<el-table-column prop="status" label="状态" align="center" width="150">
 				<template slot-scope="scope">
-					<el-switch v-model="scope.row.status" :active-value="1" :inactive-value="0"></el-switch>
+					<el-button :type="scope.row.status ? 'success' : 'danger'" size="mini" plain @click="changeStatus(scope.row)">
+						{{ scope.row.status ? '启用' : '禁用' }}
+					</el-button>
 				</template>
 			</el-table-column>
 			<el-table-column label="操作" width="180" align="center">
 				<template slot-scope="scope">
 					<el-button type="text" size="mini" @click="openModel(scope)">修改</el-button>
-					<el-button type="text" size="mini">重置密码</el-button>
-					<el-button type="text" size="mini" @click="deteleItem(scope.$index)">删除</el-button>
+					<el-button type="text" size="mini" @click="deteleItem(scope.row)">删除</el-button>
 				</template>
 			</el-table-column>
 		</el-table>
@@ -85,14 +81,14 @@
 			style="bottom: 0;left: 200px;right: 0;z-index: 100;"
 		>
 			<div style="flex: 1;" class="px-2">
-				<!-- @size-change="handleSizeChange"
-					@current-change="handleCurrentChange" -->
 				<el-pagination
-					:current-page="currentPage"
-					:page-sizes="[100, 200, 300, 400]"
-					:page-size="100"
+					:current-page="page.current"
+					:page-sizes="page.sizes"
+					:page-size="page.size"
 					layout="total, sizes, prev, pager, next, jumper"
-					:total="400"
+					:total="page.total"
+					@size-change="handleSizeChange"
+					@current-change="handleCurrentChange"
 				></el-pagination>
 			</div>
 		</el-footer>
@@ -123,9 +119,13 @@
 					/>
 				</el-form-item>
 				<el-form-item label="会员登录">
-					<el-select v-model="form.level_id" placeholder="请选择会员登录" size="mini">
-						<el-option label="普通会员" :value="1"></el-option>
-						<el-option label="黄金会员" :value="2"></el-option>
+					<el-select v-model="form.user_level_id" placeholder="请选择会员登录" size="mini">
+						<el-option
+							v-for="(item, index) in user_level"
+							:key="index"
+							:label="item.name"
+							:value="item.id"
+						></el-option>
 					</el-select>
 				</el-form-item>
 				<el-form-item label="手机" prop="phone">
@@ -133,13 +133,6 @@
 				</el-form-item>
 				<el-form-item label="邮箱" prop="email">
 					<el-input v-model="form.email" placeholder="请输入邮箱" size="mini"></el-input>
-				</el-form-item>
-				<el-form-item label="性别">
-					<el-select v-model="form.sex" placeholder="请选择性别" size="mini">
-						<el-option label="保密" :value="0"></el-option>
-						<el-option label="男性" :value="1"></el-option>
-						<el-option label="女性" :value="2"></el-option>
-					</el-select>
 				</el-form-item>
 				<el-form-item label="状态">
 					<el-radio-group v-model="form.status" size="small">
@@ -157,41 +150,28 @@
 </template>
 
 <script>
+import common from '@/common/mixins/common.js';
 export default {
-	inject: ['app'],
+	inject: ['app', 'layout'],
+
+	mixins: [common],
 
 	data() {
 		return {
+			// 接口标识
+			preUrl: 'user',
+
 			// 搜索参数
 			search: {
 				keyword: '',
-				group_id: 0,
-				time: ''
+				user_level_id: ''
 			},
 
-			//会员列表数据
-			tableData: [
-				{
-					id: 10,
-					username: '用户名',
-					nickname: '昵称',
-					avatar: 'http://static.yoshop.xany6.com/2018071718294208f086786.jpg',
-					level_id: 1,
-					level: {
-						id: 1,
-						name: '普通会员'
-					},
-					create_time: '2022-06-30 12:45:23',
-					update_time: '2022-07-3 12:45:23',
-					status: 1,
-					phone: 13047002569,
-					email: '',
-					sex: 0
-				}
-			],
+			// 会员等级列表
+			user_level: [],
 
-			// 分页当前页码
-			currentPage: 1,
+			//会员列表数据
+			tableData: [],
 
 			// 是否显示添加/修改类型弹框
 			createModel: false,
@@ -202,10 +182,9 @@ export default {
 				password: '',
 				nickname: '',
 				avatar: '',
-				level_id: 1,
+				user_level_id: 1,
 				phone: '',
 				email: '',
-				sex: 0,
 				status: 1
 			},
 
@@ -214,43 +193,39 @@ export default {
 		};
 	},
 
-	created() {
-		this.__getData();
-	},
-
 	methods: {
+		// 获取列表数据
+		getListResult(data) {
+			this.tableData = data.list;
+			this.user_level = data.user_level;
+		},
+
+		//获取请求列表分页url
+		getListUrl() {
+			return `/admin/${this.preUrl}/${this.page.current}?limit=${this.page.size}&keyword=${
+				this.search.keyword
+			}&user_level_id=${this.search.user_level_id}`;
+		},
+
 		//搜索
 		searchEvent(e) {
 			// 简单搜索
 			if (typeof e === 'string') {
-				return console.log('简单搜索');
+				this.search.keyword = e;
+				this.__getData();
+				return;
 			}
 
 			//高级搜索
-			console.log('高级搜索');
+			this.__getData();
 		},
 
 		// 清空筛选条件
 		clearSearch() {
 			this.search = {
 				keyword: '',
-				group_id: 0,
-				time: ''
+				user_level_id: ''
 			};
-
-			this.$refs.buttonSearch.closeSuperSearch();
-		},
-
-		// 获取表格数据
-		__getData() {},
-
-		// 修改状态
-		changeStatus(item) {
-			item.status = !item.status;
-			this.$message({
-				message: item.status ? '启用' : '禁用',
-				type: 'success'
-			});
 		},
 
 		// 打开添加/修改会员弹框
@@ -262,10 +237,9 @@ export default {
 					password: '',
 					nickname: '',
 					avatar: '',
-					level_id: 1,
+					user_level_id: 3,
 					phone: '',
 					email: '',
-					sex: 0,
 					status: 1
 				};
 				this.editIndex = -1;
@@ -283,49 +257,12 @@ export default {
 
 		// 提交会员数据
 		submit() {
-			let msg = '添加成功';
-			if (this.editIndex === -1) {
-				this.form.level = {
-					id: 1,
-					name: '普通会员'
-				};
-				this.tableData.unshift({
-					...this.form
-				});
-			} else {
-				msg = '修改成功';
-				let list = this.tableData[this.editIndex];
-				list.username = this.form.username;
-				list.password = this.form.password;
-				list.nickname = this.form.nickname;
-				list.level_id = this.form.level_id;
-				list.phone = this.form.phone;
-				list.email = this.form.email;
-				list.sex = this.form.sex;
-				list.status = this.form.status;
+			let id = 0;
+			if (this.editIndex !== -1) {
+				id = this.tableData[this.editIndex].id;
 			}
+			this.addOrEdit(this.form, id);
 			this.createModel = false;
-			this.$message({
-				message: msg,
-				type: 'success'
-			});
-		},
-
-		// 删除类型
-		deteleItem(index) {
-			this.$confirm('是否确认删除会员?', '提示', {
-				confirmButtonText: '确定',
-				cancelButtonText: '取消',
-				type: 'warning'
-			})
-				.then(() => {
-					this.tableData.splice(index, 1);
-					this.$message({
-						type: 'success',
-						message: '删除成功!'
-					});
-				})
-				.catch(() => {});
 		},
 
 		// 选择头像

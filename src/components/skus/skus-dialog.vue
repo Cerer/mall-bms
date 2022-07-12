@@ -4,7 +4,7 @@
 		<el-container style="position: relative;height: 70vh;margin: -30px -20px;">
 			<el-container>
 				<!-- 侧边 | 商品规格列表 -->
-				<el-aside class="bg-white border-right" width="200px" style="position: absolute;top: 0;left: 0;bottom: 0;">
+				<el-aside class="bg-white border-right" width="200px" style="position: absolute;top: 0;left: 0;bottom: 50px;">
 					<ul class="list-group list-group-flush">
 						<li
 							v-for="(item, index) in skusList"
@@ -17,6 +17,18 @@
 						</li>
 					</ul>
 				</el-aside>
+
+				<el-footer class="footerBox">
+					<el-pagination
+						:current-page="page.current"
+						:page-sizes="page.sizes"
+						:page-size="page.size"
+						layout="prev, next"
+						:total="page.total"
+						@size-change="handleSizeChange"
+						@current-change="handleCurrentChange"
+					></el-pagination>
+				</el-footer>
 
 				<!-- 主内容 -->
 				<el-container>
@@ -53,9 +65,18 @@
 </template>
 
 <script>
+import common from '@/common/mixins/common.js';
 export default {
+	mixins: [common],
+
 	data() {
 		return {
+			// 接口标识
+			preUrl: 'skus',
+
+			//是否显示关联规格弹窗的加载圈
+			loading: false,
+
 			// 是否打开商品规格弹框
 			showSkusDialog: false,
 
@@ -68,31 +89,15 @@ export default {
 			skusIndex: 0,
 
 			//规格数据
-			skusList: [
-				{
-					name: '颜色',
-					type: 0,
-					list: [
-						{ id: 1, name: '黄色', image: '', color: '', isCheck: false },
-						{ id: 1, name: '红色', image: '', color: '', isCheck: false }
-					]
-				},
-				{
-					name: '类型',
-					type: 0,
-					list: [
-						{ id: 3, name: '大小', image: '', color: '', isCheck: false },
-						{ id: 4, name: '型号', image: '', color: '', isCheck: false }
-					]
-				}
-			]
+			skusList: []
 		};
 	},
 
 	computed: {
 		// 当前规格下的规格属性列表
 		skusItem() {
-			return this.skusList[this.skusIndex].list;
+			let item = this.skusList[this.skusIndex];
+			return item ? item.list : [];
 		},
 
 		// 是否全选
@@ -101,9 +106,23 @@ export default {
 		}
 	},
 
-	created() {},
-
 	methods: {
+		// 获取列表数据
+		getListResult(data) {
+			this.skusList = data.list.map(v => {
+				let list = v.default.split(',');
+				v.list = list.map(name => {
+					return {
+						name: name,
+						image: '',
+						color: '',
+						isCheck: false
+					};
+				});
+				return v;
+			});
+		},
+
 		// 显示商品规格弹框
 		chooseSkus(callback) {
 			this.callback = callback;
@@ -123,6 +142,7 @@ export default {
 			if (typeof this.callback === 'function') {
 				let item = this.skusList[this.skusIndex];
 				this.callback({
+					id: item.id,
 					name: item.name,
 					type: item.type,
 					list: this.chooseList
@@ -198,9 +218,20 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .sum-active {
 	background-color: teal;
 	color: #fff;
+}
+
+.footerBox {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	height: 50px;
+	width: 200px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 </style>

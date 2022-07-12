@@ -13,6 +13,9 @@ router.beforeEach((to, from, next) => { //to跳转到那个页面,from从那来,
 	// 1.获取缓存的token
 	let token = window.sessionStorage.getItem('token');
 
+	// 获取缓存的用户数据
+	let user = window.sessionStorage.getItem('user');
+
 	// 2.判断是否登录，有token已登陆
 	if (token) {
 		// 2.2防止重复登录
@@ -27,6 +30,14 @@ router.beforeEach((to, from, next) => { //to跳转到那个页面,from从那来,
 		// 2.3验证页面权限
 		// 2.3.1判断跳转页面是不是404
 		if (to.name !== 'error_404') { //不是的话
+			//超级管理员跳过验证
+			if (user) {
+				user = JSON.parse(user);
+				if (user.super === 1) {
+					return next();
+				}
+			}
+
 			// 2.3.2获取校验规则数据
 			let rules = window.sessionStorage.getItem('rules');
 			rules = rules ? JSON.parse(rules) : [];

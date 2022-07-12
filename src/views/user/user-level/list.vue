@@ -25,17 +25,19 @@
 					{{ getLevel.name + ':' + scope.row[getLevel.value] }}
 				</template>
 			</el-table-column>
-			<el-table-column label="折扣率(%)" prop="discont" align="center"></el-table-column>
+			<el-table-column label="折扣率(%)" prop="discount" align="center"></el-table-column>
 			<el-table-column label="等级序号" prop="level" align="center"></el-table-column>
 			<el-table-column prop="status" label="状态" align="center" width="150">
 				<template slot-scope="scope">
-					<el-switch v-model="scope.row.status" :active-value="1" :inactive-value="0"></el-switch>
+					<el-button :type="scope.row.status ? 'success' : 'danger'" size="mini" plain @click="changeStatus(scope.row)">
+						{{ scope.row.status ? '启用' : '禁用' }}
+					</el-button>
 				</template>
 			</el-table-column>
 			<el-table-column label="操作" width="180" align="center">
 				<template slot-scope="scope">
 					<el-button type="text" size="mini" @click="openModel(scope)">修改</el-button>
-					<el-button type="text" size="mini" @click="deteleItem(scope.$index)">删除</el-button>
+					<el-button type="text" size="mini" @click="deteleItem(scope.row)">删除</el-button>
 				</template>
 			</el-table-column>
 		</el-table>
@@ -48,14 +50,14 @@
 			style="bottom: 0;left: 200px;right: 0;z-index: 100;"
 		>
 			<div style="flex: 1;" class="px-2">
-				<!-- @size-change="handleSizeChange"
-					@current-change="handleCurrentChange" -->
 				<el-pagination
-					:current-page="currentPage"
-					:page-sizes="[100, 200, 300, 400]"
-					:page-size="100"
+					:current-page="page.current"
+					:page-sizes="page.sizes"
+					:page-size="page.size"
 					layout="total, sizes, prev, pager, next, jumper"
-					:total="400"
+					:total="page.total"
+					@size-change="handleSizeChange"
+					@current-change="handleCurrentChange"
 				></el-pagination>
 			</div>
 		</el-footer>
@@ -80,7 +82,7 @@
 					<div class="d-flex align-items-center">
 						<small class="mr-2">累计消费满</small>
 						<el-input
-							v-model="form.consume"
+							v-model="form.max_price"
 							type="number"
 							:min="0"
 							placeholder="请输入内容"
@@ -96,7 +98,7 @@
 					<div class="d-flex align-items-center">
 						<small class="mr-2">累计次数满</small>
 						<el-input
-							v-model="form.times"
+							v-model="form.max_times"
 							type="number"
 							:min="0"
 							placeholder="请输入内容"
@@ -110,9 +112,9 @@
 						<small class="ml-2">设置会员等级所需要的购买量必须大于等于0，单位：笔</small>
 					</div>
 				</el-form-item>
-				<el-form-item label="折扣率(%)" prop="discont">
+				<el-form-item label="折扣率(%)" prop="discount">
 					<el-input
-						v-model="form.discont"
+						v-model="form.discount"
 						type="number"
 						:min="0"
 						placeholder="请输入折扣率"
@@ -137,30 +139,22 @@
 </template>
 
 <script>
+import common from '@/common/mixins/common.js';
 export default {
-	inject: ['app'],
+	inject: ['app', 'layout'],
+
+	mixins: [common],
 
 	data() {
 		return {
+			// 接口标识
+			preUrl: 'user_level',
+
 			// 升级标注
 			level: 0,
 
 			// 会员等级数据
-			tableData: [
-				{
-					id: 10,
-					name: '普通会员',
-					consume: 100,
-					times: 10,
-					discont: 10,
-					level: 1,
-					status: 1,
-					create_time: '2022-06-30 12:45:23'
-				}
-			],
-
-			// 分页当前页码
-			currentPage: 1,
+			tableData: [],
 
 			// 是否显示添加/修改类型弹框
 			createModel: false,
@@ -168,9 +162,9 @@ export default {
 			// 表单
 			form: {
 				name: '',
-				consume: 0,
-				times: 0,
-				discont: 0,
+				max_price: 0,
+				max_times: 0,
+				discount: 0,
 				level: 1,
 				status: 1
 			},
@@ -185,32 +179,21 @@ export default {
 			let arr = [
 				{
 					name: '累计消费',
-					value: 'consume'
+					value: 'max_price'
 				},
 				{
 					name: '累计次数',
-					value: 'times'
+					value: 'max_times'
 				}
 			];
 			return arr[this.level];
 		}
 	},
 
-	created() {
-		this.__getData();
-	},
-
 	methods: {
-		// 获取表格数据
-		__getData() {},
-
-		// 修改状态
-		changeStatus(item) {
-			item.status = !item.status;
-			this.$message({
-				message: item.status ? '启用' : '禁用',
-				type: 'success'
-			});
+		// 获取列表数据
+		getListResult(data) {
+			this.tableData = data.list;
 		},
 
 		// 打开添加/修改会员弹框
@@ -219,9 +202,9 @@ export default {
 				//新增
 				this.form = {
 					name: '',
-					consume: 0,
-					times: 0,
-					discont: 0,
+					max_price: 0,
+					max_times: 0,
+					discount: 0,
 					level: 1,
 					status: 1
 				};
@@ -239,43 +222,13 @@ export default {
 
 		// 提交会员数据
 		submit() {
-			let msg = '添加成功';
-			if (this.editIndex === -1) {
-				this.tableData.unshift({
-					...this.form
-				});
-			} else {
-				msg = '修改成功';
-				let list = this.tableData[this.editIndex];
-				list.name = this.form.name;
-				list.consume = this.form.consume;
-				list.times = this.form.times;
-				list.discont = this.form.discont;
-				list.level = this.form.level;
-				list.status = this.form.status;
+			let self = this;
+			let id = 0;
+			if (self.editIndex !== -1) {
+				id = this.tableData[this.editIndex].id;
 			}
-			this.createModel = false;
-			this.$message({
-				message: msg,
-				type: 'success'
-			});
-		},
-
-		// 删除类型
-		deteleItem(index) {
-			this.$confirm('是否确认删除该等级?', '提示', {
-				confirmButtonText: '确定',
-				cancelButtonText: '取消',
-				type: 'warning'
-			})
-				.then(() => {
-					this.tableData.splice(index, 1);
-					this.$message({
-						type: 'success',
-						message: '删除成功!'
-					});
-				})
-				.catch(() => {});
+			self.addOrEdit(self.form, id);
+			self.createModel = false;
 		},
 
 		// 选择头像
