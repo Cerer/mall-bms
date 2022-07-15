@@ -8,20 +8,14 @@
 				<!-- 左边 -->
 				<template #left>
 					<el-button type="success" size="mini" class="ml-2">导出数据</el-button>
-					<el-button type="danger" size="mini">批量删除</el-button>
+					<el-button type="danger" size="mini" @click="deteleAll">批量删除</el-button>
 				</template>
 
 				<!--右边-搜索表单 -->
 				<template #form>
 					<el-form ref="form" :inline="true" :model="form" class="demo-form-inline" label-width="80px">
 						<el-form-item label="订单编号" class="mb-0">
-							<el-input v-model="form.code" placeholder="订单编号" size="mini"></el-input>
-						</el-form-item>
-						<el-form-item label="订单状态" class="mb-0">
-							<el-select v-model="form.type" placeholder="请选择订单状态" size="mini">
-								<el-option label="区域一" value="shanghai"></el-option>
-								<el-option label="区域二" value="beijing"></el-option>
-							</el-select>
+							<el-input v-model="form.no" placeholder="订单编号" size="mini"></el-input>
 						</el-form-item>
 						<el-form-item label="下单时间" class="mb-0">
 							<el-date-picker
@@ -31,10 +25,11 @@
 								range-separator="至"
 								start-placeholder="开始日期"
 								end-placeholder="结束日期"
+								value-format="yyyy-MM-dd"
 							></el-date-picker>
 						</el-form-item>
 						<el-form-item label="收货人" class="mb-0">
-							<el-input v-model="form.username" placeholder="收货人" size="mini"></el-input>
+							<el-input v-model="form.name" placeholder="收货人" size="mini"></el-input>
 						</el-form-item>
 						<el-form-item label="手机号" class="mb-0">
 							<el-input v-model="form.phone" placeholder="手机号" size="mini"></el-input>
@@ -55,18 +50,22 @@
 						<div class="d-flex">
 							<div style="flex: 1;">
 								<p class="mb-0">订单编号：</p>
-								<p class="mb-1"><small class="font-weight-bold">2022025896899</small></p>
+								<p class="mb-1">
+									<small class="font-weight-bold">{{ scope.row.no }}</small>
+								</p>
 							</div>
 							<div style="flex: 1;">
 								<p class="mb-0">下单时间：</p>
-								<p class="mb-1"><small class="font-weight-bold">2022-02-25 14:56:24</small></p>
+								<p class="mb-1">
+									<small class="font-weight-bold">{{ scope.row.create_time }}</small>
+								</p>
 							</div>
 						</div>
-						<div class="media">
-							<img class="mr-3" :src="scope.row.cover" alt="" style="width: 60px;height: 60px;" />
+						<div v-for="(item, index) in scope.row.order_items" :key="index" class="media border-top py-2">
+							<img class="mr-3" :src="item.goods_item.cover" alt="" style="width: 60px;height: 60px;" />
 							<div class="media-body">
 								<p class="mt-0 mb-0 font-weight-bold">
-									<a class="text-primary">{{ scope.row.title }}</a>
+									<a class="text-primary">{{ item.goods_item.title }}</a>
 								</p>
 							</div>
 						</div>
@@ -74,41 +73,75 @@
 				</el-table-column>
 				<el-table-column label="实付款" align="center" width="110">
 					<template slot-scope="scope">
-						<span>￥20</span>
+						<span>￥{{ scope.row.total_price }}</span>
 						<p><small>(含运费:￥0.00)</small></p>
 					</template>
 				</el-table-column>
 				<el-table-column label="买家" align="center" width="110">
 					<template slot-scope="scope">
-						<span>用户名</span>
-						<p><small>(用户id:11)</small></p>
+						<span>{{ scope.row.user.username }}</span>
+						<p>
+							<small>(用户id:{{ scope.row.user.id }})</small>
+						</p>
 					</template>
 				</el-table-column>
 				<el-table-column label="支付方式" prop="status" align="center" width="120">
 					<template slot-scope="scope">
-						<span class="badge badge-success">微信支付</span>
+						<span v-if="scope.row.payment_method === 'wechat'" class="badge badge-success">微信支付</span>
+						<span v-else-if="scope.row.payment_method === 'alipay'" class="badge badge-primary">支付宝支付</span>
+						<span v-else class="badge badge-secondary">待支付</span>
 					</template>
 				</el-table-column>
-				<el-table-column label="配送方式" prop="stock" align="center"></el-table-column>
+				<el-table-column label="配送方式" prop="stock" align="center">
+					<template slot-scope="scope">
+						<div v-if="scope.row.ship_data">
+							<div>{{ scope.row.ship_data.express_company }}</div>
+							<div>{{ scope.row.ship_data.express_no }}</div>
+						</div>
+						<span v-else class="badge badge-secondary">未配送</span>
+					</template>
+				</el-table-column>
 				<el-table-column label="交易状态" prop="pprice" align="center" width="170">
 					<template slot-scope="scope">
 						<div>
 							付款状态:
-							<span class="badge badge-success">已付款</span>
+							<span class="badge" :class="scope.row.payment_method ? 'badge-success' : 'badge-secondary'">
+								{{ scope.row.payment_method ? '已付款' : '未付款' }}
+							</span>
 						</div>
 						<div>
 							发货状态:
-							<span class="badge badge-success">待发货</span>
+							<span class="badge" :class="scope.row.ship_data ? 'badge-success' : 'badge-secondary'">
+								{{ scope.row.ship_data ? '已发货' : '待发货' }}
+							</span>
 						</div>
 						<div>
 							收货状态:
-							<span class="badge badge-success">待发货</span>
+							<span
+								class="badge"
+								:class="scope.row.ship_status === 'received' ? 'badge-success' : 'badge-secondary'"
+							>
+								{{ scope.row.ship_status === 'received' ? '已收货' : '未收货' }}
+							</span>
 						</div>
 					</template>
 				</el-table-column>
 				<el-table-column label="操作" width="120" align="center">
 					<template slot-scope="scope">
-						<el-button type="primary" size="mini" plain>订单详情</el-button>
+						<el-button type="text" size="mini">订单详情</el-button>
+						<el-button
+							v-if="
+								scope.row.ship_status === 'pending' &&
+									scope.row.closed === 0 &&
+									scope.row.payment_method &&
+									scope.row.refund_status === 'pending'
+							"
+							type="text"
+							size="mini"
+							@click="ship(scope.row)"
+						>
+							订单发货
+						</el-button>
 					</template>
 				</el-table-column>
 			</el-table>
@@ -133,6 +166,29 @@
 				</div>
 			</el-footer>
 		</el-tabs>
+
+		<!-- 订单发货 -->
+		<el-dialog title="提示" :visible.sync="shipModel">
+			<el-form ref="shipForm" :model="shipForm" :rules="shipRules" label-width="100px">
+				<el-form-item label="快递公司" prop="express_company">
+					<el-select v-model="shipForm.express_company">
+						<el-option
+							v-for="(item, index) in express_company_options"
+							:key="index"
+							:label="item.name"
+							:value="item.name"
+						></el-option>
+					</el-select>
+				</el-form-item>
+				<el-form-item label="快递单号" prop="express_no">
+					<el-input type="text" v-model="shipForm.express_no" placeholder="请输入快递单号"></el-input>
+				</el-form-item>
+			</el-form>
+			<span slot="footer" class="dialog-footer">
+				<el-button @click="shipModel = false">取 消</el-button>
+				<el-button type="primary" @click="shipSubmit">确 定</el-button>
+			</span>
+		</el-dialog>
 	</div>
 </template>
 
@@ -189,55 +245,84 @@ export default {
 
 			// 搜索参数
 			form: {
-				code: '',
-				type: '',
+				no: '',
 				time: '',
-				username: '',
+				name: '',
 				phone: ''
 			},
 
 			// 商品表格数据
-			tableData: []
+			tableData: [],
+
+			// 是否显示订单发货弹出框
+			shipModel: false,
+
+			// 发货表单
+			shipForm: {
+				express_company: '',
+				express_no: ''
+			},
+
+			// 发货表单校验
+			shipRules: {
+				express_company: [{ required: true, message: '快递公司不能为空', trigger: 'change' }],
+				express_no: [{ required: true, message: '快递单号不能为空', trigger: 'blur' }]
+			},
+
+			// 快递公司下拉数据
+			express_company_options: [],
+
+			// 发货id
+			shipId: ''
 		};
 	},
 
 	computed: {
+		//处理tab值
 		tab() {
 			return this.tabBars[this.tabIndex].key;
+		},
+
+		// 处理接口参数值
+		params() {
+			let str = '';
+			for (let key in this.form) {
+				let val = this.form[key];
+				if (val) {
+					if (Array.isArray(val)) {
+						str += `&starttime=${val[0]}`;
+						str += `&endtime=${val[1]}`;
+					} else {
+						str += `&${key}=${this.form[key]}`;
+					}
+				}
+			}
+			return str;
 		}
+	},
+
+	created() {
+		// 获取快递公司数据
+		this.axios
+			.get(`/admin/express_company/1?limst=50`, {
+				token: true
+			})
+			.then(res => {
+				let data = res.data.data;
+				this.express_company_options = data.list;
+			});
 	},
 
 	methods: {
 		//获取请求列表分页url
 		getListUrl() {
-			return `/admin/${this.preUrl}/${this.page.current}?limit=${this.page.size}&tab=${this.tab}`;
+			return `/admin/${this.preUrl}/${this.page.current}?limit=${this.page.size}&tab=${this.tab}${this.params}`;
 		},
 
 		// 获取列表数据
 		getListResult(data) {
 			this.tableData = data.list;
-			console.log(data);
 		},
-
-		// 获取表格数据
-		// __getData() {
-		// 	for (let j = 0; j < 20; j++) {
-		// 		this.tableData.push({
-		// 			id: j,
-		// 			title: '荣耀 V10全网通 标配版 4G+64G 魅丽红',
-		// 			cover: 'http://static.yoshop.xany6.com/2018071718294208f086786.jpg',
-		// 			create_time: '2022-06-11 18:34:14',
-		// 			categroy: '手机',
-		// 			type: '普通商品',
-		// 			sale_count: 20,
-		// 			order: 100,
-		// 			status: 1,
-		// 			stock: 200,
-		// 			pprice: 1000,
-		// 			ischeck: 1 //0未审核，1通过，2不通过
-		// 		});
-		// 	}
-		// },
 
 		// tabs切换获取数据
 		handleClick(tab, event) {
@@ -248,44 +333,64 @@ export default {
 		searchEvent(e = false) {
 			// 简单搜索
 			if (typeof e === 'string') {
-				return console.log('简单搜索');
+				this.form.no = e;
+				this.__getData();
+				return;
 			}
 
 			//高级搜索
-			console.log('高级搜索');
+			this.__getData();
 		},
 
 		// 清空筛选条件
 		clearSearch() {
 			this.form = {
-				code: '',
-				type: '',
+				no: '',
 				time: '',
-				username: '',
+				name: '',
 				phone: ''
 			};
-
-			this.$refs.buttonSearch[this.tabIndex].closeSuperSearch();
 		},
 
-		// 商品表格多选
-		handleSelectionChange(val) {
-			this.multipleSelection = val;
+		// 订单发货
+		ship(item) {
+			this.shipModel = true;
+			this.shipId = item.id;
+			this.shipReset();
 		},
 
-		// 删除数据
-		deteleItem(index) {
-			this.$confirm('是否删除该条数据?', '提示', {
-				confirmButtonText: '确定',
-				cancelButtonText: '取消',
-				type: 'warning'
-			}).then(() => {
-				this.tableData[this.tabIndex].list.splice(index, 1);
-				this.$message({
-					type: 'success',
-					message: '删除成功!'
-				});
+		// 发货提交
+		shipSubmit() {
+			this.layout.showLoading();
+			this.$refs.shipForm.validate(valid => {
+				if (valid) {
+					this.axios
+						.post(`/admin/order/${this.shipId}/ship`, this.shipForm, {
+							token: true
+						})
+						.then(() => {
+							this.layout.hideLoading();
+							this.$message({
+								type: 'success',
+								message: '发货成功'
+							});
+							this.__getData();
+							this.shipModel = false;
+						})
+						.catch(() => {
+							this.layout.hideLoading();
+						});
+				}
 			});
+		},
+
+		// 发货重置
+		shipReset() {
+			this.shipForm = {
+				express_company: undefined,
+				express_no: undefined
+			};
+			this.$refs.shipForm.resetFields();
 		}
 	}
 };
