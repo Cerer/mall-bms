@@ -7,7 +7,7 @@
 			<button-search ref="buttonSearch" placeholder="要搜索的订单编号" @search="searchEvent">
 				<!-- 左边 -->
 				<template #left>
-					<el-button type="success" size="mini" class="ml-2">导出数据</el-button>
+					<el-button type="success" size="mini" class="ml-2" @click="exportExcel">导出数据</el-button>
 					<el-button type="danger" size="mini" @click="deteleAll">批量删除</el-button>
 				</template>
 
@@ -168,7 +168,7 @@
 		</el-tabs>
 
 		<!-- 订单发货 -->
-		<el-dialog title="提示" :visible.sync="shipModel">
+		<el-dialog title="订单发货" :visible.sync="shipModel">
 			<el-form ref="shipForm" :model="shipForm" :rules="shipRules" label-width="100px">
 				<el-form-item label="快递公司" prop="express_company">
 					<el-select v-model="shipForm.express_company">
@@ -187,6 +187,32 @@
 			<span slot="footer" class="dialog-footer">
 				<el-button @click="shipModel = false">取 消</el-button>
 				<el-button type="primary" @click="shipSubmit">确 定</el-button>
+			</span>
+		</el-dialog>
+
+		<!-- 导出数据 -->
+		<el-dialog title="导出数据" :visible.sync="exportModel">
+			<el-form ref="exportForm" :model="exportForm" :rules="exportRules" label-width="100px">
+				<el-form-item label="订单类型" prop="tab">
+					<el-select v-model="exportForm.tab">
+						<el-option v-for="(item, index) in tabBars" :key="index" :label="item.name" :value="item.key"></el-option>
+					</el-select>
+				</el-form-item>
+				<el-form-item label="时间范围" prop="time">
+					<el-date-picker
+						v-model="exportForm.time"
+						type="daterange"
+						size="mini"
+						range-separator="至"
+						start-placeholder="开始日期"
+						end-placeholder="结束日期"
+						value-format="yyyy-MM-dd"
+					></el-date-picker>
+				</el-form-item>
+			</el-form>
+			<span slot="footer" class="dialog-footer">
+				<el-button @click="exportForm = false">取 消</el-button>
+				<el-button type="primary" @click="exporSubmit">确 定</el-button>
 			</span>
 		</el-dialog>
 	</div>
@@ -273,7 +299,21 @@ export default {
 			express_company_options: [],
 
 			// 发货id
-			shipId: ''
+			shipId: '',
+
+			// 是否显示导出数据弹出框
+			exportModel: false,
+
+			//导出表单
+			exportForm: {
+				tab: '',
+				time: ''
+			},
+
+			// 表单校验
+			exportRules: {
+				tab: [{ required: true, message: '订单类型不能为空', trigger: 'change' }]
+			}
 		};
 	},
 
@@ -391,6 +431,61 @@ export default {
 				express_no: undefined
 			};
 			this.$refs.shipForm.resetFields();
+		},
+
+		// 导出数据
+		exportExcel() {
+			this.exportModel = true;
+		},
+
+		// 确定导出
+		exporSubmit() {
+			this.$refs.exportForm.validate(valid => {
+				if (valid) {
+					let url = `/admin/order/excelexport?tab=${this.exportForm.tab}`;
+					let params = '';
+					let val = this.exportForm.time;
+					if (val && Array.isArray(val)) {
+						params += `$starttime=${val[0]}`;
+						params += `$endtime=${val[1]}`;
+					}
+
+					this.layout.showLoading();
+					this.axios
+						.post(
+							url + params,
+							{},
+							{
+								token: true,
+								responseType: 'blob'
+							}
+						)
+						.then(res => {
+							this.exportModel = false;
+
+							if (res.status == 200) {
+								let url = window.URL.createObjectURL(new Blob([res.data]));
+								let link = document.createElement('a');
+								link.style.display = 'none';
+								link.href = url;
+								let filename = new Date().getTime() + '.xlsx';
+								link.setAttribute('download', filename);
+								document.body.appendChild(link);
+								link.click();
+
+								this.$message({
+									type: 'success',
+									message: '导出成功'
+								});
+							}
+
+							this.layout.hideLoading();
+						})
+						.catch(() => {
+							this.layout.hideLoading();
+						});
+				}
+			});
 		}
 	}
 };

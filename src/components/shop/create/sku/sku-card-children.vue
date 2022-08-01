@@ -21,7 +21,8 @@
 		</div>
 
 		<input
-			:value="item.name"
+			v-if="type === 0"
+			:value="item.text"
 			@input="inputChange"
 			class="form-control text-center border-0"
 			style="width: 80px;font-size: 15px;"
@@ -31,7 +32,7 @@
 		<span
 			class="btn btn-light p-0 position-absolute"
 			style="line-height: 1;top: -10px;right: -10px;"
-			@click="delSkuValue({ cardIndex, listIndex })"
+			@click="delSkuValueEvent"
 		>
 			<i class="el-icon-circle-close"></i>
 		</span>
@@ -41,7 +42,7 @@
 <script>
 import { mapMutations } from 'vuex';
 export default {
-	inject: ['app'],
+	inject: ['app', 'layout'],
 
 	props: {
 		type: {
@@ -53,12 +54,49 @@ export default {
 		listIndex: Number
 	},
 
+	watch: {
+		type(newVal, oldVal) {
+			let keys = ['text', 'color', 'image'];
+			let defauleVal = ['属性值', '#FFFFFF', '/favicon.ico'];
+			this.item.value = this.item[keys[newVal]] ? this.item[keys[newVal]] : defauleVal[newVal];
+
+			this.updateSkuValueEvent();
+		}
+	},
+
 	methods: {
 		...mapMutations(['delSkuValue', 'updateSkuValue']),
 
+		// 修改规格属性值
+		updateSkuValueEvent() {
+			let keys = ['text', 'color', 'image'];
+			this.item.value = this.item[keys[this.type]];
+			this.axios.post(`/admin/goods_skus_card_value/${this.item.id}`, this.item, { token: true });
+		},
+
+		// 删除规格属性值
+		delSkuValueEvent() {
+			this.layout.showLoading();
+			this.axios
+				.post(
+					`/admin/goods_skus_card_value/${this.item.id}/delete`,
+					{},
+					{
+						token: true
+					}
+				)
+				.then(() => {
+					this.delSkuValue({ cardIndex: this.cardIndex, listIndex: this.listIndex });
+					this.layout.hideLoading();
+				})
+				.catch(() => {
+					this.layout.hideLoading();
+				});
+		},
+
 		// 修改name值
 		inputChange(e) {
-			this.vModel('name', e.target.value);
+			this.vModel('text', e.target.value);
 		},
 
 		// 修改函数

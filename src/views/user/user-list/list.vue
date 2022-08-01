@@ -106,7 +106,6 @@
 					<el-input v-model="form.nickname" placeholder="请输入昵称" size="mini"></el-input>
 				</el-form-item>
 				<el-form-item label="头像" prop="avatar">
-					{{ form.avatat }}
 					<div v-if="!form.avatar" class="btn btn-light border" @click="chooesImg"><i class="el-icon-plus"></i></div>
 
 					<img

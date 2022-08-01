@@ -24,7 +24,7 @@
 		</thead>
 		<tbody>
 			<tr v-for="(item, index) in list" :key="index">
-				<th v-for="(sku, skuIndex) in item.skus" :key="skuIndex" scope="row" class="text-center">{{ sku.name }}</th>
+				<th v-for="(sku, skuIndex) in item.skus" :key="skuIndex" scope="row" class="text-center">{{ sku.value }}</th>
 				<td class="text-center" width="100">
 					<!-- <div class="btn btn-light border"><i class="el-icon-plus"></i></div> -->
 					<div v-if="!item.image" class="btn btn-light border" @click="chooesImg(item)">

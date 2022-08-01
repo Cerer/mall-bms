@@ -199,7 +199,7 @@ export default {
 			pageSize: 5,
 
 			// 相册图片分页每页显示条数选择
-			pageSizes: [5, 10, 20, 30, 40, 100],
+			pageSizes: [5, 20, 30, 40, 100],
 
 			// 相册图片列表总条数
 			total: 0,
@@ -240,7 +240,7 @@ export default {
 			this.__init();
 			this.callback = callback;
 			this.showImgDialog = true;
-			
+
 			// 取消选中图片
 			this.unChoose();
 		},
@@ -317,6 +317,7 @@ export default {
 		// 切换相册
 		albumsChange(index) {
 			this.albumsIndex = index;
+			this.currentPage = 1;
 			this.getImageList();
 		},
 
@@ -451,12 +452,14 @@ export default {
 
 		// 分页每页几条
 		handleSizeChange(val) {
-			console.log(`每页 ${val} 条`);
+			this.pageSize = val;
+			this.__init();
 		},
 
 		// 分页选中页
 		handleCurrentChange(val) {
-			console.log(`当前页: ${val}`);
+			this.currentPage = val;
+			this.__init();
 		}
 	}
 };

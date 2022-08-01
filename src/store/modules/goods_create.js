@@ -21,38 +21,7 @@ export default {
 		volume: 0, //体积
 
 		// 规格卡片
-		sku_card: [{
-				name: '颜色', //规格名称
-				type: 0, //规格类型0无，1颜色，2图片
-				list: [{
-						name: '黄色',
-						image: '',
-						color: ''
-					},
-					{
-						name: '红色',
-						image: '',
-						color: ''
-					}
-				]
-			},
-			{
-				name: '类型',
-				type: 0,
-				list: [{
-						name: '大小',
-						image: '',
-						color: ''
-					},
-					{
-						name: '型号',
-						image: '',
-						color: ''
-					}
-				]
-
-			}
-		],
+		sku_card: [],
 
 		//规格设置表头
 		ths: [{
@@ -178,12 +147,8 @@ export default {
 		},
 
 		// 增加规格卡片
-		addSkuCard(state) {
-			state.sku_card.push({
-				name: '规格名称',
-				type: 0,
-				list: []
-			});
+		addSkuCard(state, data) {
+			state.sku_card.push(data);
 		},
 
 		// 删除规格卡片
@@ -209,12 +174,11 @@ export default {
 		},
 
 		// 增加指定规格卡片的规格属性
-		addSkuValue(state, index) {
-			state.sku_card[index].list.push({
-				name: '规格名称',
-				image: '',
-				color: ''
-			});
+		addSkuValue(state, {
+			index,
+			data
+		}) {
+			state.sku_card[index].list.push(data);
 		},
 
 		// 删除指定规格卡片的规格属性

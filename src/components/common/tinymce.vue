@@ -27,10 +27,14 @@ import 'tinymce/plugins/preview';
 import 'tinymce/plugins/fullscreen';
 import 'tinymce/plugins/help';
 export default {
+	inject: ['app'],
+	
 	components: {
 		Editor
 	},
+	
 	name: 'Tinymce',
+	
 	props: {
 		// 默认的富文本内容
 		value: {
@@ -66,7 +70,7 @@ export default {
 				skin_url: `${this.baseUrl}/tinymce/skins/ui/oxide`,
 				// skin_url: 'tinymce/skins/ui/oxide-dark', // 暗色系
 				convert_urls: false,
-				height: 300,
+				height: 500,
 				// content_css（为编辑区指定css文件）,加上就不显示字数统计了
 				// content_css: `${this.baseUrl}tinymce/skins/content/default/content.css`,
 				// （指定需加载的插件）
@@ -82,6 +86,24 @@ export default {
 					const img = 'data:image/jpeg;base64,' + blobInfo.base64();
 					success(img);
 					console.log(failure);
+				},
+
+				// 自定义按钮
+				setup: editor => {
+					editor.ui.registry.addButton('imageUpload', {
+						tooltip: '插入图片',
+						icon: 'image',
+						onAction: () => {
+							//let upload = that.$refs.imageUpload
+							//upload.handleClick()
+							this.app.chooseImage(data => {
+								data.forEach(item => {
+									// 插入到编辑器中
+									editor.insertContent(`&nbsp;<img src="${item.src}">&nbsp;`);
+								});
+							},100);
+						}
+					});
 				}
 			},
 			myValue: this.value
